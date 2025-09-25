@@ -1,0 +1,12 @@
+[package]
+name = "conway-life-ncurses"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ncurses = "6.0.1"
+unicode-segmentation = "1.11"
+
+[[bin]]
+name = "conway-life"
+path = "main.rs"
