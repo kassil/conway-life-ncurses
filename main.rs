@@ -37,6 +37,33 @@ fn canvas_put_cell(win: WINDOW, y: i32, x: i32, cell_state: u32) {
     mvwaddch(win, y, x, cell_state);
 }
 
+fn update_game(win: WINDOW, win2: WINDOW) {
+    for y in 0..getmaxy(win) {
+        for x in 0..getmaxx(win) {
+
+            let n_live = count_live_neighbours(win, y, x);
+            let cell = canvas_get_cell(win, y, x);
+            if cell == ALIVE {
+                // Live
+                if n_live < 2 {
+                    // Underpopulation
+                    canvas_put_cell(win2, y, x, DEAD);
+                }
+                else if n_live > 3 {
+                    // Overpopulation
+                    canvas_put_cell(win2, y, x, DEAD);
+                }
+            }
+            else if cell == DEAD && n_live == 3 {
+                // Reproduction
+                canvas_put_cell(win2, y, x, ALIVE);
+            }
+        }
+    }
+    // Draw changes after considering all cells
+    overwrite(win2, win);
+}
+
 fn main() {
     initscr();
     noecho();
@@ -52,8 +79,6 @@ fn main() {
     start_color();
     init_pair(1, COLOR_WHITE, COLOR_BLUE);      // Regular files
     init_pair(2, COLOR_YELLOW, COLOR_BLUE);     // Directories
-
-    let mut delay_ms = 100;
 
     let initial_mode = 1;
     match initial_mode {
@@ -83,34 +108,25 @@ fn main() {
         }
     }
 
+    // Set a 100ms timeout for getch().
+    let mut delay_ms = 100;
+    //timeout(delay_msec);
+    let mut last_turn = Instant::now() - Duration::from_millis(10000);
+    //let mut last_turn = Instant::now();
+    let redraw_interval = Duration::from_millis(100);
+
     loop {
-        wrefresh(win);
-        std::thread::sleep(time::Duration::from_millis(delay_ms));
 
-        for y in 0..getmaxy(win) {
-            for x in 0..getmaxx(win) {
+        // Handle the periodic redraw every 100ms
+        if last_turn.elapsed() >= Duration::from_millis(delay_ms) {
 
-                let n_live = count_live_neighbours(win, y, x);
-                let cell = canvas_get_cell(win, y, x);
-                if cell == ALIVE {
-                    // Live
-                    if n_live < 2 {
-                        // Underpopulation
-                        canvas_put_cell(win2, y, x, DEAD);
-                    }
-                    else if n_live > 3 {
-                        // Overpopulation
-                        canvas_put_cell(win2, y, x, DEAD);
-                    }
-                }
-                else if cell == DEAD && n_live == 3 {
-                    // Reproduction
-                    canvas_put_cell(win2, y, x, ALIVE);
-                }
-            }
+            update_game(win, win2);
+            last_turn = Instant::now();
+            wrefresh(win);
         }
-        // Draw changes after considering all cells
-        overwrite(win2, win);
+
+        auto max_sleep_msec = max(0, Instant::now() - last_turn).to_millis() - delay_ms);
+        timeout(max_sleep_msec);
 
         // Handle input
         const KEY_Q: i32 = 'q' as i32;
@@ -135,6 +151,5 @@ fn main() {
             _ => {}
         }
     }
-
     endwin();
 }
