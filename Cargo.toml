@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 ncurses = "6.0.1"
+rand = "0.8.5"
 unicode-segmentation = "1.11"
 
 [[bin]]
