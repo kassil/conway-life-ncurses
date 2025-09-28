@@ -8,6 +8,10 @@ use rand::random;
 use std::cmp::{max, min};
 use std::time;
 
+// Cell values
+const ALIVE: u32 = 'O' as u32;
+const DEAD:  u32 = ' ' as u32;
+
 fn count_live_neighbours(win: WINDOW, y_ctr: i32, x_ctr: i32) -> i32 {
     let mut n_live: i32 = 0;
 
@@ -16,7 +20,7 @@ fn count_live_neighbours(win: WINDOW, y_ctr: i32, x_ctr: i32) -> i32 {
             if x != x_ctr || y != y_ctr {
                 // don't count yourself
                 let cell = canvas_get_cell(win, y, x);
-                if cell != ' ' {
+                if cell != DEAD {
                     n_live += 1;
                 }
             }
@@ -25,12 +29,12 @@ fn count_live_neighbours(win: WINDOW, y_ctr: i32, x_ctr: i32) -> i32 {
     n_live
 }
 
-fn canvas_get_cell(win: WINDOW, y: i32, x: i32) -> char {
-    char::from_u32(mvwinch(win, y, x) & 0xFF).unwrap_or(' ')
+fn canvas_get_cell(win: WINDOW, y: i32, x: i32) -> u32 {
+    mvwinch(win, y, x) & 0xFF
 }
 
-fn canvas_put_cell(win: WINDOW, y: i32, x: i32, cell_state: char) {
-    mvwaddch(win, y, x, cell_state as u32);
+fn canvas_put_cell(win: WINDOW, y: i32, x: i32, cell_state: u32) {
+    mvwaddch(win, y, x, cell_state);
 }
 
 fn main() {
@@ -40,7 +44,7 @@ fn main() {
     let win = stdscr();
     keypad(win, true);
     scrollok(win, true);
-    nodelay(win, true);
+    nodelay(win, true);                         // Non-blocking input
     let win2 = newwin(getmaxy(win), getmaxx(win), 0, 0);
     keypad(win2, true);
     scrollok(win2, true);
@@ -59,8 +63,8 @@ fn main() {
                     if i!=0 && j!=0 {
                         let y = getmaxy(win)/2 + j;
                         let x = getmaxx(win)/2 + i;
-                        canvas_put_cell(win, y, x, 'O');
-                        canvas_put_cell(win2, y, x, 'O');
+                        canvas_put_cell(win,  y, x, ALIVE);
+                        canvas_put_cell(win2, y, x, ALIVE);
                     }
                 }
             }
@@ -70,7 +74,7 @@ fn main() {
                 for x in 0..getmaxx(win) {
                     // Roll a dice with a 50% chance using a random boolean
                     if random() {
-                        mvwaddch(win, y, x, 'O' as u32 );
+                        mvwaddch(win, y, x, ALIVE);
                     }
                 }
             }
@@ -88,20 +92,20 @@ fn main() {
 
                 let n_live = count_live_neighbours(win, y, x);
                 let cell = canvas_get_cell(win, y, x);
-                if cell == 'O' {
+                if cell == ALIVE {
                     // Live
                     if n_live < 2 {
                         // Underpopulation
-                        canvas_put_cell(win2, y, x, ' ');
+                        canvas_put_cell(win2, y, x, DEAD);
                     }
                     else if n_live > 3 {
                         // Overpopulation
-                        canvas_put_cell(win2, y, x, ' ');
+                        canvas_put_cell(win2, y, x, DEAD);
                     }
                 }
-                else if cell == ' ' && n_live == 3 {
+                else if cell == DEAD && n_live == 3 {
                     // Reproduction
-                    canvas_put_cell(win2, y, x, 'O');
+                    canvas_put_cell(win2, y, x, ALIVE);
                 }
             }
         }
