@@ -6,7 +6,8 @@ extern crate ncurses;
 use ncurses::*;
 use rand::random;
 use std::cmp::{max, min};
-use std::time;
+use std::io::Write;
+use std::time::{Duration, Instant};
 
 // Cell values
 const ALIVE: u32 = 'O' as u32;
@@ -108,12 +109,9 @@ fn main() {
         }
     }
 
-    // Set a 100ms timeout for getch().
+    // Target frame rate
     let mut delay_ms = 100;
-    //timeout(delay_msec);
     let mut last_turn = Instant::now() - Duration::from_millis(10000);
-    //let mut last_turn = Instant::now();
-    let redraw_interval = Duration::from_millis(100);
 
     loop {
 
@@ -125,7 +123,7 @@ fn main() {
             wrefresh(win);
         }
 
-        auto max_sleep_msec = max(0, Instant::now() - last_turn).to_millis() - delay_ms);
+        let max_sleep_msec = max(0, (Instant::now() - last_turn).as_millis() as i32 + delay_ms as i32);
         timeout(max_sleep_msec);
 
         // Handle input
