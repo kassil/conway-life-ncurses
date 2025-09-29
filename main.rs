@@ -110,8 +110,8 @@ fn main() {
     }
 
     // Target frame rate
-    let mut delay_ms = 100;
     let mut last_turn = Instant::now() - Duration::from_millis(10000);
+    let mut target_game_interval = Duration::from_millis(100);
 
     let mut maybe_log = std::fs::OpenOptions::new()
         .append(true)
@@ -121,14 +121,14 @@ fn main() {
     loop {
 
         // Handle the periodic redraw every 100ms
-        if last_turn.elapsed() >= Duration::from_millis(delay_ms) {
+        if last_turn.elapsed() >= target_game_interval {
             update_game(win, win2);
             last_turn = Instant::now();
             wrefresh(win);
         }
 
-        let max_sleep_msec = max(0, (Instant::now() - last_turn).as_millis() as i32 + delay_ms as i32);
-        timeout(max_sleep_msec);
+        let max_sleep_msec = max(0, (Instant::now() - last_turn + target_game_interval).as_millis());
+        timeout(max_sleep_msec.try_into().unwrap());
 
         // Handle input
         const KEY_Q: i32 = 'q' as i32;
@@ -143,16 +143,17 @@ fn main() {
                 let new_cols = COLS();
                 wresize(win, new_rows, new_cols);
                 wresize(win2, new_rows, new_cols);
+                wrefresh(win);
             }
             // Escape or 'q' to quit
             KEY_Q | KEY_ESC => {
                 break;
             }
             val if val == '+' as i32 => {
-                delay_ms = max(delay_ms * 4 / 5, 10);
+                target_game_interval = Duration::from_millis(max((target_game_interval.as_millis() * 4 / 5).try_into().unwrap(), 10));
             }
             val if val == '-' as i32 => {
-                delay_ms = delay_ms * 5 / 4;
+                target_game_interval = Duration::from_millis((target_game_interval.as_millis() * 5 / 4).try_into().unwrap());
             }
             _ => {}
         }
