@@ -113,11 +113,15 @@ fn main() {
     let mut delay_ms = 100;
     let mut last_turn = Instant::now() - Duration::from_millis(10000);
 
+    let mut maybe_log = std::fs::OpenOptions::new()
+        .append(true)
+        .create(true) // Create the file if it doesn't exist
+        .open("conway.log");
+
     loop {
 
         // Handle the periodic redraw every 100ms
         if last_turn.elapsed() >= Duration::from_millis(delay_ms) {
-
             update_game(win, win2);
             last_turn = Instant::now();
             wrefresh(win);
@@ -129,7 +133,11 @@ fn main() {
         // Handle input
         const KEY_Q: i32 = 'q' as i32;
         const KEY_ESC: i32 = 27;
-        match wgetch(win) {
+        if let Ok(ref mut log) = maybe_log {
+            writeln!(log, "Sleeping {} ms", max_sleep_msec);
+        }
+        let key = wgetch(win);
+        match key {
             KEY_RESIZE => {
                 let new_rows = LINES();
                 let new_cols = COLS();
@@ -147,6 +155,13 @@ fn main() {
                 delay_ms = delay_ms * 5 / 4;
             }
             _ => {}
+        }
+        if key != ERR {
+        }
+        else {
+            if let Ok(ref mut log) = maybe_log {
+                writeln!(log, "Slept {} ms", (Instant::now() - last_turn).as_millis());
+            }
         }
     }
     endwin();
